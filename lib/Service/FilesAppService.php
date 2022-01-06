@@ -42,6 +42,7 @@ use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
+use OCP\IUserManager;
 
 class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 	private $request;
@@ -56,6 +57,7 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 	private $permissionService;
 	private $cardMapper;
 	private $logger;
+	private $userManager;
 
 	public function __construct(
 		IRequest $request,
@@ -69,7 +71,8 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 		PermissionService $permissionService,
 		CardMapper  $cardMapper,
 		LoggerInterface $logger,
-		string $userId = null
+		string $userId = null,
+		IUserManager $userManager
 	) {
 		$this->request = $request;
 		$this->l10n = $l10n;
@@ -83,6 +86,7 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 		$this->permissionService = $permissionService;
 		$this->cardMapper = $cardMapper;
 		$this->logger = $logger;
+		$this->userManager = $userManager;
 	}
 
 	public function listAttachments(int $cardId): array {
@@ -94,11 +98,13 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 				$this->logger->debug('Unable to find node for share with ID ' . $share->getId());
 				return null;
 			}
+			$user = $this->userManager->get($this->userId);
+			$displayName = $user ? $user->getDisplayName() : '';
 			$attachment = new Attachment();
 			$attachment->setType('file');
 			$attachment->setId((int)$share->getId());
 			$attachment->setCardId($cardId);
-			$attachment->setCreatedBy($share->getSharedBy());
+			$attachment->setCreatedBy($displayName);
 			$attachment->setData($file->getName());
 			$attachment->setLastModified($file->getMTime());
 			$attachment->setCreatedAt($share->getShareTime()->getTimestamp());
